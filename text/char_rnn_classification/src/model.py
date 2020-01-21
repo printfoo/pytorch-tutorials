@@ -1,4 +1,5 @@
 import data
+import torch
 import torch.nn as nn
 
 class RNN(nn.Module):
@@ -28,3 +29,8 @@ if __name__ == "__main__":
     print(n_letters, n_hidden, n_categories)
     rnn = RNN(n_letters, n_hidden, n_categories)
     print(rnn)
+
+    input = data.lineToTensor("Shan")
+    hidden = torch.zeros(1, n_hidden)
+    output, next_hidden = rnn(input[0], hidden)
+    print(output)

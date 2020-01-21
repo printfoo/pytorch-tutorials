@@ -12,15 +12,15 @@ def findFiles(path):
 
 # Turn a Unicode string to plain ASCII, thanks to http://stackoverflow.com/a/518232/2809427
 def unicodeToAscii(s):
-    return ''.join(
-        c for c in unicodedata.normalize('NFD', s)
-        if unicodedata.category(c) != 'Mn'
+    return "".join(
+        c for c in unicodedata.normalize("NFD", s)
+        if unicodedata.category(c) != "Mn"
         and c in all_letters
     )
 
 # Read a file and split into lines
 def readLines(filename):
-    lines = open(filename).read().strip().split('\n')
+    lines = open(filename).read().strip().split("\n")
     return [unicodeToAscii(line) for line in lines]
 
 # Build the category_lines dictionary, a list of lines per category
@@ -28,7 +28,7 @@ def loadData(path):
     category_lines = {}
     all_categories = []
     for filename in findFiles(path):
-        category = filename.split('/')[-1].split('.')[0]
+        category = filename.split("/")[-1].split(".")[0]
         all_categories.append(category)
         lines = readLines(filename)
         category_lines[category] = lines
@@ -48,5 +48,5 @@ def lineToTensor(line):
     return tensor
 
 if __name__ == "__main__":
-    eg_tensor = lineToTensor("Shan Jiang")
+    eg_tensor = lineToTensor("Shan")
     print(eg_tensor, eg_tensor.size())
