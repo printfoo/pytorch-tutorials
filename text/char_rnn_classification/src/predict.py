@@ -1,6 +1,14 @@
 from model import *
 from data import *
 import sys
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--data", type=str, required=False)
+parser.add_argument("--output", type=str, required=False)
+parser.add_argument("--name", type=str, required=False)
+args, extras = parser.parse_known_args()
+args.extras = extras
+args.command = " ".join(["python"] + sys.argv)
 
 # Just return an output given a line
 def evaluate(line_tensor):
@@ -28,6 +36,6 @@ def predict(line, n_predictions=3):
     return predictions
 
 if __name__ == "__main__":
-    rnn = torch.load("char-rnn-classification.pt")
-    category_lines, all_categories = loadData("../data/names/*.txt")
-    predict(sys.argv[1])
+    category_lines, all_categories = loadData(args.data)
+    rnn = torch.load(args.output)
+    predict(args.name)

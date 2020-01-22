@@ -4,6 +4,13 @@ from model import *
 import random
 import time
 import math
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--data", type=str, required=False)
+parser.add_argument("--output", type=str, required=False)
+args, extras = parser.parse_known_args()
+args.extras = extras
+args.command = " ".join(["python"] + sys.argv)
 
 # Get the category and index of the greatest value.
 def categoryFromOutput(output):
@@ -50,7 +57,7 @@ def timeSince(start_time):
 if __name__ == "__main__":
 
     # Load data and initialize RNN.
-    category_lines, all_categories = loadData("../data/names/*.txt")
+    category_lines, all_categories = loadData(args.data)
     n_categories = len(all_categories)
     n_letters = n_letters
     n_hidden = 128
@@ -62,7 +69,7 @@ if __name__ == "__main__":
 
     # Start training.
     start_time = time.time()  # Start timing.
-    n_iters = 10000
+    n_iters = 100000
     print_every = 1000
     for iter in range(1, n_iters + 1):  # Train n_iters iterations.
         category, line, category_tensor, line_tensor = randomTrainingExample()
@@ -75,4 +82,4 @@ if __name__ == "__main__":
             print("%d %d%% (%s) %.4f %s / %s %s" % (iter, iter / n_iters * 100, timeSince(start_time), loss, line, predict, result))
 
     # Save the trained model.
-    torch.save(rnn, "char-rnn-classification.pt")
+    torch.save(rnn, args.output)

@@ -2,6 +2,13 @@ from data import *
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+import sys
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--data", type=str, required=False)
+args, extras = parser.parse_known_args()
+args.extras = extras
+args.command = " ".join(["python"] + sys.argv)
 
 class RNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -33,7 +40,7 @@ if __name__ == "__main__":
 
     # Initialize RNN.
     n_hidden = 128
-    category_lines, all_categories = loadData("../data/names/*.txt")
+    category_lines, all_categories = loadData(args.data)
     n_categories = len(all_categories)
     print("N letters:", n_letters)  # 58
     print("N hidden:", n_hidden)  # 128
