@@ -12,40 +12,43 @@ args, extras = parser.parse_known_args()
 args.extras = extras
 args.command = " ".join(["python"] + sys.argv)
 
-# Get the category and index of the greatest value.
-def categoryFromOutput(output):
-    top_n, top_i = output.data.topk(1) # Tensor out of Variable with .data
-    category_i = top_i[0][0]
-    return all_categories[category_i], category_i
-
 # Make a random choice in a list.
 def randomChoice(l):
     return l[random.randint(0, len(l) - 1)]
 
-# Randomly select an example to train.
-def randomTrainingExample():
+# Get a random category and random line from that category
+def randomTrainingPair():
     category = randomChoice(all_categories)
     line = randomChoice(category_lines[category])
-    category_tensor = Variable(torch.LongTensor([all_categories.index(category)]))
-    line_tensor = Variable(lineToTensor(line))
-    return category, line, category_tensor, line_tensor
+    return category, line
 
-def train(category_tensor, line_tensor):
+# Make category, input, and target tensors from a random category, line pair
+def randomTrainingExample():
+    category, line = randomTrainingPair()
+    category_tensor = categoryTensor(category, all_categories)
+    input_line_tensor = inputTensor(line)
+    target_line_tensor = targetTensor(line)
+    return category_tensor, input_line_tensor, target_line_tensor
+
+def train(category_tensor, input_line_tensor, target_line_tensor):
+    target_line_tensor.unsqueeze_(-1)  # Transpose.
     hidden = rnn.initHidden()  # Initialize hidden layer.
     rnn.zero_grad()  # Initialize RNN with zero gradient.
+    loss = 0  # Initialize loss to 0.
 
-    for i in range(line_tensor.size()[0]):  # One pass of the input sequence.
-        output, hidden = rnn(line_tensor[i], hidden)
+    for i in range(input_line_tensor.size(0)):  # One pass of the input sequence.
+        output, hidden = rnn(category_tensor, input_line_tensor[i], hidden)
+        l = criterion(output, target_line_tensor[i])
+        loss += l  # Accumulate loss of the input sequence.
 
     # Computes gradients of the loss wrt parameters using backpropagation.
-    loss = criterion(output, category_tensor)
     loss.backward()
 
     # Update parameters based on gradients and learning rate.
     for p in rnn.parameters():
         p.data.add_(-learning_rate, p.grad.data)
 
-    return output, loss.item()
+    return output, loss.item() / input_line_tensor.size(0)
 
 # Time since training.
 def timeSince(start_time):
@@ -61,25 +64,22 @@ if __name__ == "__main__":
     n_categories = len(all_categories)
     n_letters = n_letters
     n_hidden = 128
-    rnn = RNN(n_letters, n_hidden, n_categories)  # Initialize RNN.
+    rnn = RNN(n_categories, n_letters, n_hidden, n_letters)  # Initialize RNN.
 
     # Define loss and learning rate.
     criterion = nn.NLLLoss()  # Negative log-likelihood loss.
-    learning_rate = 0.005
+    learning_rate = 0.0005
 
     # Start training.
     start_time = time.time()  # Start timing.
-    n_iters = 100000
+    n_iters = 10000
     print_every = 1000
     for iter in range(1, n_iters + 1):  # Train n_iters iterations.
-        category, line, category_tensor, line_tensor = randomTrainingExample()
-        output, loss = train(category_tensor, line_tensor)
+        output, loss = train(*randomTrainingExample())
 
         # Print iter number, loss, name and predict.
         if iter % print_every == 0:
-            predict, predict_i = categoryFromOutput(output)
-            result = "✓" if predict == category else "✗ (%s)" % category
-            print("%d %d%% (%s) %.4f %s / %s %s" % (iter, iter / n_iters * 100, timeSince(start_time), loss, line, predict, result))
+            print('%s (%d %d%%) %.4f' % (timeSince(start_time), iter, iter / n_iters * 100, loss))
 
     # Save the trained model.
     torch.save(rnn, args.output)

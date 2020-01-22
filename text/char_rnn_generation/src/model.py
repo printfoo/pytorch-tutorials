@@ -23,16 +23,17 @@ class RNN(nn.Module):
 
     def forward(self, category, input, hidden):
 
-        # Concatenates tensors in 1st dimension, size = input + hidden.
+        # Encoder.
         input_combined = torch.cat(tensors=(category, input, hidden), dim=1)
-
         hidden = self.i2h(input_combined)
         output = self.i2o(input_combined)
-
         output_combined = torch.cat(tensors=(hidden, output), dim=1)
+
+        # Decoder.
         output = self.o2o(output_combined)
         output = self.dropout(output)
         output = self.softmax(output)
+
         return output, hidden
 
     def initHidden(self):
