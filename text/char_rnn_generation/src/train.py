@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     # Start training.
     start_time = time.time()  # Start timing.
-    n_iters = 10000
+    n_iters = 100000
     print_every = 1000
     for iter in range(1, n_iters + 1):  # Train n_iters iterations.
         output, loss = train(*randomTrainingExample())

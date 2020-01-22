@@ -1,1 +1,1 @@
-python src/predict.py --data="data/names/*.txt" --output="output/rnn.pt" --name="Jiang"
+python src/predict.py --data="data/names/*.txt" --output="output/rnn.pt"

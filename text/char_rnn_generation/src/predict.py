@@ -5,37 +5,42 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--data", type=str, required=False)
 parser.add_argument("--output", type=str, required=False)
-parser.add_argument("--name", type=str, required=False)
 args, extras = parser.parse_known_args()
 args.extras = extras
 args.command = " ".join(["python"] + sys.argv)
 
-# Just return an output given a line
-def evaluate(line_tensor):
-    hidden = rnn.initHidden()
-    
-    # Pass the RNN for the input line.
-    for i in range(line_tensor.size()[0]):
-        output, hidden = rnn(line_tensor[i], hidden)
-    
-    return output
+# Sample from a category and starting letter
+def sample(category, start_letter="A", max_length=50):
+    with torch.no_grad():  # no need to track history in sampling
+        category_tensor = categoryTensor(category, all_categories)
+        input = inputTensor(start_letter)
+        hidden = rnn.initHidden()
 
-def predict(line, n_predictions=3):
-    output = evaluate(Variable(lineToTensor(line)))
+        output_name = start_letter
 
-    # Get top N categories
-    topv, topi = output.data.topk(n_predictions, 1, True)
-    predictions = []
+        for i in range(max_length):
+            output, hidden = rnn(category_tensor, input[0], hidden)
+            topv, topi = output.topk(1)
+            topi = topi[0][0]
+            if topi == n_letters - 1:  # EOS.
+                break
+            else:
+                letter = all_letters[topi]
+                output_name += letter
+            input = inputTensor(letter)  # Next.
 
-    for i in range(n_predictions):
-        value = topv[0][i]
-        category_index = topi[0][i]
-        print("(%.2f) %s" % (value, all_categories[category_index]))
-        predictions.append([value, all_categories[category_index]])
+        return output_name
 
-    return predictions
+# Get multiple samples from one category and multiple starting letters
+def samples(category, start_letters="A"):
+    for start_letter in start_letters:
+        output_name = sample(category, start_letter)
+        print(output_name, end = " ")
 
 if __name__ == "__main__":
     category_lines, all_categories = loadData(args.data)
     rnn = torch.load(args.output)
-    predict(args.name)
+    for category in all_categories:
+        print("\n" + category)
+        samples(category, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    print()
