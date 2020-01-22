@@ -5,72 +5,74 @@ import random
 import time
 import math
 
-n_hidden = 128
-n_epochs = 100000
-print_every = 5000
-plot_every = 1000
-learning_rate = 0.005 # If you set this too high, it might explode. If too low, it might not learn
-
+# Get the category and index of the greatest value.
 def categoryFromOutput(output):
     top_n, top_i = output.data.topk(1) # Tensor out of Variable with .data
     category_i = top_i[0][0]
     return all_categories[category_i], category_i
 
+# Make a random choice in a list.
 def randomChoice(l):
     return l[random.randint(0, len(l) - 1)]
 
-def randomTrainingPair():
+# Randomly select an example to train.
+def randomTrainingExample():
     category = randomChoice(all_categories)
     line = randomChoice(category_lines[category])
     category_tensor = Variable(torch.LongTensor([all_categories.index(category)]))
     line_tensor = Variable(lineToTensor(line))
     return category, line, category_tensor, line_tensor
 
-rnn = RNN(n_letters, n_hidden, n_categories)
-optimizer = torch.optim.SGD(rnn.parameters(), lr=learning_rate)
-criterion = nn.NLLLoss()
-
 def train(category_tensor, line_tensor):
-    hidden = rnn.initHidden()
-    optimizer.zero_grad()
+    hidden = rnn.initHidden()  # Initialize hidden layer.
+    rnn.zero_grad()  # Initialize RNN with zero gradient.
 
-    for i in range(line_tensor.size()[0]):
+    for i in range(line_tensor.size()[0]):  # One pass of the input sequence.
         output, hidden = rnn(line_tensor[i], hidden)
 
+    # Computes gradients of the loss wrt parameters using backpropagation.
     loss = criterion(output, category_tensor)
     loss.backward()
 
-    optimizer.step()
+    # Update parameters based on gradients and learning rate.
+    for p in rnn.parameters():
+        p.data.add_(-learning_rate, p.grad.data)
 
-    return output, loss.data[0]
+    return output, loss.item()
 
-# Keep track of losses for plotting
-current_loss = 0
-all_losses = []
-
-def timeSince(since):
-    now = time.time()
-    s = now - since
+# Time since training.
+def timeSince(start_time):
+    s = time.time() - start_time
     m = math.floor(s / 60)
     s -= m * 60
-    return '%dm %ds' % (m, s)
+    return "%dm %ds" % (m, s)
 
-start = time.time()
+if __name__ == "__main__":
 
-for epoch in range(1, n_epochs + 1):
-    category, line, category_tensor, line_tensor = randomTrainingPair()
-    output, loss = train(category_tensor, line_tensor)
-    current_loss += loss
+    # Load data and initialize RNN.
+    category_lines, all_categories = loadData("../data/names/*.txt")
+    n_categories = len(all_categories)
+    n_letters = n_letters
+    n_hidden = 128
+    rnn = RNN(n_letters, n_hidden, n_categories)  # Initialize RNN.
 
-    # Print epoch number, loss, name and guess
-    if epoch % print_every == 0:
-        guess, guess_i = categoryFromOutput(output)
-        correct = '✓' if guess == category else '✗ (%s)' % category
-        print('%d %d%% (%s) %.4f %s / %s %s' % (epoch, epoch / n_epochs * 100, timeSince(start), loss, line, guess, correct))
+    # Define loss and learning rate.
+    criterion = nn.NLLLoss()  # Negative log-likelihood loss.
+    learning_rate = 0.005
 
-    # Add current loss avg to list of losses
-    if epoch % plot_every == 0:
-        all_losses.append(current_loss / plot_every)
-        current_loss = 0
+    # Start training.
+    start_time = time.time()  # Start timing.
+    n_iters = 10000
+    print_every = 1000
+    for iter in range(1, n_iters + 1):  # Train n_iters iterations.
+        category, line, category_tensor, line_tensor = randomTrainingExample()
+        output, loss = train(category_tensor, line_tensor)
 
-torch.save(rnn, 'char-rnn-classification.pt')
+        # Print iter number, loss, name and predict.
+        if iter % print_every == 0:
+            predict, predict_i = categoryFromOutput(output)
+            result = "✓" if predict == category else "✗ (%s)" % category
+            print("%d %d%% (%s) %.4f %s / %s %s" % (iter, iter / n_iters * 100, timeSince(start_time), loss, line, predict, result))
+
+    # Save the trained model.
+    torch.save(rnn, "char-rnn-classification.pt")

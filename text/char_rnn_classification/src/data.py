@@ -33,7 +33,7 @@ def loadData(path):
         lines = readLines(filename)
         category_lines[category] = lines
     n_categories = len(all_categories)
-    return n_categories
+    return category_lines, all_categories
 
 # Find letter index from all_letters, e.g. "a" = 0
 def letterToIndex(letter):

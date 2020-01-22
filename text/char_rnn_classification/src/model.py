@@ -1,6 +1,7 @@
 from data import *
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 
 class RNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -26,13 +27,14 @@ class RNN(nn.Module):
         return output, hidden
 
     def initHidden(self):
-        return torch.zeros(1, self.hidden_size)
+        return Variable(torch.zeros(1, self.hidden_size))
 
 if __name__ == "__main__":
 
     # Initialize RNN.
     n_hidden = 128
-    n_categories = loadData("../data/names/*.txt")
+    category_lines, all_categories = loadData("../data/names/*.txt")
+    n_categories = len(all_categories)
     print("N letters:", n_letters)  # 58
     print("N hidden:", n_hidden)  # 128
     print("N categories:", n_categories)  # 18
