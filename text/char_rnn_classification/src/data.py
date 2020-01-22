@@ -48,5 +48,8 @@ def lineToTensor(line):
     return tensor
 
 if __name__ == "__main__":
-    eg_tensor = lineToTensor("Shan")
-    print(eg_tensor, eg_tensor.size())
+    eg = "Shan"
+    print("Name:", eg)
+    eg_tensor = lineToTensor(eg)
+    print("Tensor:", eg_tensor)
+    print("Size:", eg_tensor.size())
