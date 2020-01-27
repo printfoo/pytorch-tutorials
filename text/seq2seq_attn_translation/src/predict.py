@@ -98,4 +98,4 @@ if __name__ == "__main__":
     attn_decoder = torch.load(os.path.join(args.output_dir, "decoder.pt"))
 
     # Evaluate some.
-    evaluateRandomly(encoder, attn_decoder)
+    evaluateRandomly(encoder, attn_decoder, n=20)

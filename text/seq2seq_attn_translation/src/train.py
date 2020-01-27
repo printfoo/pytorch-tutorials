@@ -124,7 +124,7 @@ if __name__ == "__main__":
     attn_decoder = AttnDecoderRNN(hidden_size, output_lang.n_words, dropout_p=0.1).to(device)
     
     # Train the model.
-    trainIters(encoder, attn_decoder, n_iters=100, print_every=1000)
+    trainIters(encoder, attn_decoder, n_iters=50000, print_every=5000)
     
     # Save the trained model.
     torch.save(encoder, os.path.join(args.output_dir, "encoder.pt"))
