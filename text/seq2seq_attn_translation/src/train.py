@@ -1,6 +1,7 @@
 import time
 import math
 import sys
+import os
 
 import torch
 from torch import optim
@@ -88,7 +89,7 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, lear
 
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
-    training_pairs = [tensorsFromPair(random.choice(pairs)) for i in range(n_iters)]
+    training_pairs = [tensorsFromPair(input_lang, output_lang, random.choice(pairs)) for i in range(n_iters)]
     criterion = nn.NLLLoss()
 
     for iter in range(1, n_iters + 1):
@@ -123,7 +124,7 @@ if __name__ == "__main__":
     attn_decoder = AttnDecoderRNN(hidden_size, output_lang.n_words, dropout_p=0.1).to(device)
     
     # Train the model.
-    trainIters(encoder, attn_decoder, n_iters=5000, print_every=1000)
+    trainIters(encoder, attn_decoder, n_iters=100, print_every=1000)
     
     # Save the trained model.
     torch.save(encoder, os.path.join(args.output_dir, "encoder.pt"))
