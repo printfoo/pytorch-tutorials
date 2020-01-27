@@ -1,1 +1,1 @@
-python src/train.py --data="data/names/*.txt" --output="output/rnn.pt"
+python src/train.py --output_dir="output"

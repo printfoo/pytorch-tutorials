@@ -1,70 +1,100 @@
-import torch
-import glob
+from io import open
 import unicodedata
 import string
+import re
+import random
 
-all_letters = string.ascii_letters + " .,;'-"
-n_letters = len(all_letters) + 1 # Plus EOS marker
+SOS_token = 0
+EOS_token = 1
+MAX_LENGTH = 10
+eng_prefixes = (
+    "i am ", "i m ",
+    "he is", "he s ",
+    "she is", "she s ",
+    "you are", "you re ",
+    "we are", "we re ",
+    "they are", "they re "
+)
 
-# Find all files given a pattern.
-def findFiles(path):
-    return glob.glob(path)
+class Lang:
+    def __init__(self, name):
+        self.name = name
+        self.word2index = {}
+        self.word2count = {}
+        self.index2word = {0: "SOS", 1: "EOS"}
+        self.n_words = 2  # Count SOS and EOS
 
-# Turn a Unicode string to plain ASCII, thanks to http://stackoverflow.com/a/518232/2809427
+    def addSentence(self, sentence):
+        for word in sentence.split(' '):
+            self.addWord(word)
+
+    def addWord(self, word):
+        if word not in self.word2index:
+            self.word2index[word] = self.n_words
+            self.word2count[word] = 1
+            self.index2word[self.n_words] = word
+            self.n_words += 1
+        else:
+            self.word2count[word] += 1
+
+# Turn a Unicode string to plain ASCII, thanks to
+# https://stackoverflow.com/a/518232/2809427
 def unicodeToAscii(s):
-    return "".join(
+    return ''.join(
         c for c in unicodedata.normalize("NFD", s)
         if unicodedata.category(c) != "Mn"
-        and c in all_letters
     )
 
-# Read a file and split into lines
-def readLines(filename):
-    lines = open(filename).read().strip().split("\n")
-    return [unicodeToAscii(line) for line in lines]
+# Lowercase, trim, and remove non-letter characters
+def normalizeString(s):
+    s = unicodeToAscii(s.lower().strip())
+    s = re.sub(r"([.!?])", r" \1", s)
+    s = re.sub(r"[^a-zA-Z.!?]+", r" ", s)
+    return s
 
-# Build the category_lines dictionary, a list of lines per category
-def loadData(path="data/names/*.txt"):
-    category_lines = {}
-    all_categories = []
-    for filename in findFiles(path):
-        category = filename.split("/")[-1].split(".")[0]
-        all_categories.append(category)
-        lines = readLines(filename)
-        category_lines[category] = lines
-    n_categories = len(all_categories)
-    return category_lines, all_categories
+def readLangs(lang1, lang2, reverse=False):
+    print("Reading lines...")
 
-# One-hot vector for category
-def categoryTensor(category, all_categories):
-    li = all_categories.index(category)
-    tensor = torch.zeros(1, len(all_categories))
-    tensor[0][li] = 1
-    return tensor
+    # Read the file and split into lines
+    lines = open("data/%s-%s.txt" % (lang1, lang2), encoding="utf-8").\
+        read().strip().split("\n")
 
-# One-hot matrix of first to last letters (not including EOS) for input
-def inputTensor(line):
-    tensor = torch.zeros(len(line), 1, n_letters)
-    for li in range(len(line)):
-        letter = line[li]
-        tensor[li][0][all_letters.find(letter)] = 1
-    return tensor
+    # Split every line into pairs and normalize
+    pairs = [[normalizeString(s) for s in l.split("\t")] for l in lines]
 
-# LongTensor of second letter to end (EOS) for target
-def targetTensor(line):
+    # Reverse pairs, make Lang instances
+    if reverse:
+        pairs = [list(reversed(p)) for p in pairs]
+        input_lang = Lang(lang2)
+        output_lang = Lang(lang1)
+    else:
+        input_lang = Lang(lang1)
+        output_lang = Lang(lang2)
 
-    # If not found, index = -1
-    letter_indexes = [all_letters.find(line[li]) for li in range(1, len(line))]
-    letter_indexes.append(n_letters - 1) # EOS
-    return torch.LongTensor(letter_indexes)
+    return input_lang, output_lang, pairs
+
+def filterPair(p):
+    return len(p[0].split(" ")) < MAX_LENGTH and \
+        len(p[1].split(" ")) < MAX_LENGTH and \
+        p[1].startswith(eng_prefixes)
+
+def filterPairs(pairs):
+    return [pair for pair in pairs if filterPair(pair)]
+
+def prepareData(lang1, lang2, reverse=False):
+    input_lang, output_lang, pairs = readLangs(lang1, lang2, reverse)
+    print("Read %s sentence pairs" % len(pairs))
+    pairs = filterPairs(pairs)
+    print("Trimmed to %s sentence pairs" % len(pairs))
+    print("Counting words...")
+    for pair in pairs:
+        input_lang.addSentence(pair[0])
+        output_lang.addSentence(pair[1])
+    print("Counted words:")
+    print(input_lang.name, input_lang.n_words)
+    print(output_lang.name, output_lang.n_words)
+    return input_lang, output_lang, pairs
 
 if __name__ == "__main__":
-    eg = unicodeToAscii("O'Néàl")
-    print("Name:", eg)
-    print("Name Tensor:", inputTensor(eg))
-    print("Char ID:", targetTensor(eg))
-    eg_cat = "Irish"
-    category_lines, all_categories = loadData()
-    n_categories = len(all_categories)
-    print("Category:", eg_cat)
-    print("Category Tensor:", categoryTensor(eg_cat, all_categories))
+    input_lang, output_lang, pairs = prepareData("eng", "fra", True)
+    print(random.choice(pairs))

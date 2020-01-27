@@ -3,8 +3,7 @@ from data import *
 import sys
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("--data", type=str, required=False)
-parser.add_argument("--output", type=str, required=False)
+parser.add_argument("--output_dir", type=str, required=False)
 args, extras = parser.parse_known_args()
 args.extras = extras
 args.command = " ".join(["python"] + sys.argv)
