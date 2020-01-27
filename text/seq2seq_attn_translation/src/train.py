@@ -27,19 +27,6 @@ def timeSince(since, percent):
     rs = es - s
     return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
 
-def indexesFromSentence(lang, sentence):
-    return [lang.word2index[word] for word in sentence.split(' ')]
-
-def tensorFromSentence(lang, sentence):
-    indexes = indexesFromSentence(lang, sentence)
-    indexes.append(EOS_token)
-    return torch.tensor(indexes, dtype=torch.long, device=device).view(-1, 1)
-
-def tensorsFromPair(pair):
-    input_tensor = tensorFromSentence(input_lang, pair[0])
-    target_tensor = tensorFromSentence(output_lang, pair[1])
-    return (input_tensor, target_tensor)
-
 def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer,
           criterion, max_length=MAX_LENGTH, teacher_forcing_ratio=0.5):
     encoder_hidden = encoder.initHidden()
@@ -128,7 +115,7 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, lear
 if __name__ == "__main__":
     
     # Load data.
-    input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
+    input_lang, output_lang, pairs = prepareData("eng", "fra", True)
 
     # Initialize the model.
     hidden_size = 256
@@ -139,5 +126,5 @@ if __name__ == "__main__":
     trainIters(encoder, attn_decoder, n_iters=5000, print_every=1000)
     
     # Save the trained model.
-    torch.save(encoder, args.output_dir + "/encoder.pt")
-    torch.save(attn_decoder, args.output_dir + "/decoder.pt")
+    torch.save(encoder, os.path.join(args.output_dir, "encoder.pt"))
+    torch.save(attn_decoder, os.path.join(args.output_dir, "decoder.pt"))

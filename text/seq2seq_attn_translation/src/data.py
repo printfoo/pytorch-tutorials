@@ -3,6 +3,12 @@ import unicodedata
 import string
 import re
 import random
+import torch
+
+if torch.cuda.is_available(): # Use last GPU.
+    device = torch.device("cuda:%s" % (torch.cuda.device_count() - 1))
+else:
+    device = torch.device("cpu")
 
 SOS_token = 0
 EOS_token = 1
@@ -94,6 +100,19 @@ def prepareData(lang1, lang2, reverse=False):
     print(input_lang.name, input_lang.n_words)
     print(output_lang.name, output_lang.n_words)
     return input_lang, output_lang, pairs
+
+def indexesFromSentence(lang, sentence):
+    return [lang.word2index[word] for word in sentence.split(' ')]
+
+def tensorFromSentence(lang, sentence):
+    indexes = indexesFromSentence(lang, sentence)
+    indexes.append(EOS_token)
+    return torch.tensor(indexes, dtype=torch.long, device=device).view(-1, 1)
+
+def tensorsFromPair(pair):
+    input_tensor = tensorFromSentence(input_lang, pair[0])
+    target_tensor = tensorFromSentence(output_lang, pair[1])
+    return (input_tensor, target_tensor)
 
 if __name__ == "__main__":
     input_lang, output_lang, pairs = prepareData("eng", "fra", True)
