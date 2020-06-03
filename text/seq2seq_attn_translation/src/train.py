@@ -114,17 +114,17 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, lear
             plot_loss_total = 0
 
 if __name__ == "__main__":
-    
+
     # Load data.
     input_lang, output_lang, pairs = prepareData("eng", "fra", True)
 
     # Initialize the model.
     hidden_size = 256
     encoder = EncoderRNN(input_lang.n_words, hidden_size).to(device)
-    attn_decoder = AttnDecoderRNN(hidden_size, output_lang.n_words, dropout_p=0.1).to(device)
+    attn_decoder = AttnDecoderRNN(hidden_size, output_lang.n_words).to(device)
     
     # Train the model.
-    trainIters(encoder, attn_decoder, n_iters=50000, print_every=5000)
+    trainIters(encoder, attn_decoder, n_iters=10000, print_every=500)
     
     # Save the trained model.
     torch.save(encoder, os.path.join(args.output_dir, "encoder.pt"))
